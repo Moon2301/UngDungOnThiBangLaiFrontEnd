@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { HomeScreen } from './components/home-screen';
 import { LicenseScreen } from './components/license-screen';
-import { QuizScreen, QuizResults } from './components/quiz-screen';
+import { QuizScreen} from './components/quiz-screen';
+import type { QuizResults } from './components/quiz-screen';
 import { ResultsScreen } from './components/results-screen';
 import { CategoryScreen } from './components/category-screen';
 import { questions, categories, licenseTypes } from './data/questions';
-import { Question } from './data/questions';
+import type { Question } from './data/questions';
 
 type Screen = 
   | { type: 'home' }

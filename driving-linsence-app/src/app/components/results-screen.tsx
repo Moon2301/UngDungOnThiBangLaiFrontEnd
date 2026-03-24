@@ -1,6 +1,6 @@
 import { Trophy, X, Clock, CheckCircle2, XCircle, RotateCcw, Home, AlertTriangle } from 'lucide-react';
-import { QuizResults } from './quiz-screen';
-import { Question } from '../data/questions';
+import type { QuizResults } from './quiz-screen';
+import type { Question } from '../data/questions';
 
 interface ResultsScreenProps {
   results: QuizResults;

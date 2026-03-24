@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Clock, Flag, AlertTriangle } from 'lucide-react';
-import { Question } from '../data/questions';
+import type { Question } from '../data/questions';
 
 interface QuizScreenProps {
   questions: Question[];
@@ -77,13 +77,13 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
     };
 
     questions.forEach((question, index) => {
-      const selectedAnswer = selectedAnswers[index];
-      const isCorrect = selectedAnswer === question.correctAnswer;
-      
-      if (selectedAnswer !== null) {
+      const selected = selectedAnswers[index];
+      const isCorrect = selected === question.correctAnswer;
+
+      if (selected !== null) {
         results.answers.push({
           questionId: question.id,
-          selectedAnswer,
+          selectedAnswer: selected,
           isCorrect,
         });
 

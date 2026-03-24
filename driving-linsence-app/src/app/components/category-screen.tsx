@@ -1,5 +1,5 @@
 import { ChevronLeft, Play, BookOpen } from 'lucide-react';
-import { Question } from '../data/questions';
+import type { Question } from '../data/questions';
 
 interface CategoryScreenProps {
   categoryId: string;
