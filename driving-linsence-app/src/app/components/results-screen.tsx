@@ -1,24 +1,25 @@
-import { Trophy, X, Clock, CheckCircle2, XCircle, RotateCcw, Home, AlertTriangle } from 'lucide-react';
+import {
+  Trophy, X, Clock, CheckCircle2, XCircle, RotateCcw, Home, AlertTriangle,
+} from 'lucide-react';
 import type { QuizResults } from './quiz-screen';
-import type { Question } from '../data/questions';
+import type { FrontendQuestion } from '../services/api';
 
 interface ResultsScreenProps {
   results: QuizResults;
-  questions: Question[];
+  questions: FrontendQuestion[];
   onRetry: () => void;
   onHome: () => void;
 }
 
 export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsScreenProps) {
   const percentage = Math.round((results.correctAnswers / results.totalQuestions) * 100);
-  const passed = results.correctAnswers >= 21; // Pass threshold for Vietnamese driving test
-  
-  // Check if any important (điểm liệt) questions were answered incorrectly
+  const passed = results.correctAnswers >= 21;
+
   const failedImportantQuestions = results.answers.filter((answer) => {
     const question = questions.find((q) => q.id === answer.questionId);
     return question?.isImportant && !answer.isCorrect;
   });
-  
+
   const actuallyPassed = passed && failedImportantQuestions.length === 0;
 
   const formatTime = (seconds: number) => {
@@ -30,7 +31,7 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Result Card */}
+        {/* Card kết quả */}
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-6">
           {/* Header */}
           <div
@@ -41,11 +42,7 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
             }`}
           >
             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              {actuallyPassed ? (
-                <Trophy className="w-12 h-12" />
-              ) : (
-                <X className="w-12 h-12" />
-              )}
+              {actuallyPassed ? <Trophy className="w-12 h-12" /> : <X className="w-12 h-12" />}
             </div>
             <h1 className="text-3xl font-bold mb-2">
               {actuallyPassed ? 'Chúc mừng! Bạn đã đạt!' : 'Chưa đạt yêu cầu'}
@@ -57,7 +54,7 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
             </p>
           </div>
 
-          {/* Stats */}
+          {/* Thống kê */}
           <div className="p-8">
             <div className="grid grid-cols-3 gap-6 mb-8">
               <div className="text-center">
@@ -74,14 +71,15 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Clock className="w-5 h-5 text-purple-600" />
                   <div className="text-2xl font-bold text-purple-600">
-                    {Math.floor(results.timeTaken / 60)}:{(results.timeTaken % 60).toString().padStart(2, '0')}
+                    {Math.floor(results.timeTaken / 60)}:
+                    {(results.timeTaken % 60).toString().padStart(2, '0')}
                   </div>
                 </div>
                 <div className="text-sm text-gray-600">Thời gian</div>
               </div>
             </div>
 
-            {/* Important Questions Warning */}
+            {/* Cảnh báo điểm liệt */}
             {failedImportantQuestions.length > 0 && (
               <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
                 <div className="flex items-start gap-3">
@@ -89,15 +87,16 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
                   <div>
                     <h3 className="font-semibold text-red-900 mb-1">Sai câu hỏi điểm liệt</h3>
                     <p className="text-sm text-red-700">
-                      Bạn đã trả lời sai {failedImportantQuestions.length} câu hỏi điểm liệt. Trong kỳ thi chính thức, 
-                      bắt buộc phải trả lời đúng tất cả các câu điểm liệt để đạt.
+                      Bạn đã trả lời sai {failedImportantQuestions.length} câu hỏi điểm liệt. Trong
+                      kỳ thi chính thức, bắt buộc phải trả lời đúng tất cả các câu điểm liệt để
+                      đạt.
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Summary */}
+            {/* Tổng quan */}
             <div className="bg-gray-50 rounded-xl p-6 mb-6">
               <h3 className="font-semibold mb-4">Tổng quan kết quả</h3>
               <div className="space-y-3">
@@ -120,12 +119,14 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
                     <Clock className="w-5 h-5 text-blue-600" />
                     <span className="text-gray-700">Thời gian làm bài</span>
                   </div>
-                  <span className="font-semibold text-blue-600">{formatTime(results.timeTaken)}</span>
+                  <span className="font-semibold text-blue-600">
+                    {formatTime(results.timeTaken)}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Hành động */}
             <div className="flex gap-3">
               <button
                 onClick={onRetry}
@@ -145,7 +146,7 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
           </div>
         </div>
 
-        {/* Detailed Review */}
+        {/* Chi tiết đáp án */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-xl font-bold mb-6">Chi tiết đáp án</h2>
           <div className="space-y-4">
@@ -183,12 +184,11 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
                         )}
                       </div>
                       <p className="text-gray-800 mb-3">{question.question}</p>
-                      
+
                       <div className="space-y-2 mb-3">
                         {question.options.map((option, optIndex) => {
                           const isUserAnswer = selectedOption === optIndex;
                           const isCorrectAnswer = question.correctAnswer === optIndex;
-                          
                           return (
                             <div
                               key={optIndex}
@@ -196,8 +196,8 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
                                 isCorrectAnswer
                                   ? 'bg-green-100 border border-green-300 font-medium'
                                   : isUserAnswer
-                                  ? 'bg-red-100 border border-red-300'
-                                  : 'bg-white border border-gray-200'
+                                    ? 'bg-red-100 border border-red-300'
+                                    : 'bg-white border border-gray-200'
                               }`}
                             >
                               <div className="flex items-start gap-2">
@@ -217,7 +217,8 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
                       {!isCorrect && (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-900">
-                            <span className="font-semibold">Giải thích:</span> {question.explanation}
+                            <span className="font-semibold">Giải thích:</span>{' '}
+                            {question.explanation}
                           </p>
                         </div>
                       )}

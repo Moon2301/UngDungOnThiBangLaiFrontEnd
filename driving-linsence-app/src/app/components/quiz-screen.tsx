@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Clock, Flag, AlertTriangle } from 'lucide-react';
-import type { Question } from '../data/questions';
+import type { FrontendQuestion } from '../services/api';
 
 interface QuizScreenProps {
-  questions: Question[];
+  questions: FrontendQuestion[];
   title: string;
-  timeLimit?: number; // in minutes
+  timeLimit?: number; // phút
   onBack: () => void;
   onComplete: (results: QuizResults) => void;
 }
@@ -14,14 +14,14 @@ export interface QuizResults {
   totalQuestions: number;
   correctAnswers: number;
   wrongAnswers: number;
-  timeTaken: number; // in seconds
+  timeTaken: number; // giây
   answers: { questionId: number; selectedAnswer: number; isCorrect: boolean }[];
 }
 
 export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: QuizScreenProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<(number | null)[]>(
-    new Array(questions.length).fill(null)
+    new Array(questions.length).fill(null),
   );
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
@@ -30,10 +30,7 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
   const selectedAnswer = selectedAnswers[currentQuestionIndex];
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeElapsed((prev) => prev + 1);
-    }, 1000);
-
+    const timer = setInterval(() => setTimeElapsed((prev) => prev + 1), 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -41,6 +38,7 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
     if (timeLimit && timeElapsed >= timeLimit * 60) {
       handleSubmit();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeElapsed, timeLimit]);
 
   const formatTime = (seconds: number) => {
@@ -55,18 +53,6 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
     setSelectedAnswers(newAnswers);
   };
 
-  const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
-
   const handleSubmit = () => {
     const results: QuizResults = {
       totalQuestions: questions.length,
@@ -79,19 +65,10 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
     questions.forEach((question, index) => {
       const selected = selectedAnswers[index];
       const isCorrect = selected === question.correctAnswer;
-
       if (selected !== null) {
-        results.answers.push({
-          questionId: question.id,
-          selectedAnswer: selected,
-          isCorrect,
-        });
-
-        if (isCorrect) {
-          results.correctAnswers++;
-        } else {
-          results.wrongAnswers++;
-        }
+        results.answers.push({ questionId: question.id, selectedAnswer: selected, isCorrect });
+        if (isCorrect) results.correctAnswers++;
+        else results.wrongAnswers++;
       } else {
         results.wrongAnswers++;
       }
@@ -126,7 +103,13 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
               {timeLimit && (
                 <div className="flex items-center gap-1 text-xs sm:text-sm">
                   <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
-                  <span className={timeRemaining && timeRemaining < 60 ? 'text-red-600 font-semibold' : 'text-gray-700'}>
+                  <span
+                    className={
+                      timeRemaining && timeRemaining < 60
+                        ? 'text-red-600 font-semibold'
+                        : 'text-gray-700'
+                    }
+                  >
                     {formatTime(timeRemaining || 0)}
                   </span>
                 </div>
@@ -143,7 +126,7 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
       </header>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        {/* Question Card */}
+        {/* Câu hỏi */}
         <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-start gap-3 mb-4">
             {currentQuestion.isImportant && (
@@ -158,7 +141,7 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
               {currentQuestion.isImportant && (
                 <div className="mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-xs sm:text-sm text-red-800 font-medium">
-                    ⚠️ Câu hỏi điểm liệt - Bắt buộc phải trả lời đúng
+                    ⚠️ Câu hỏi điểm liệt – Bắt buộc phải trả lời đúng
                   </p>
                 </div>
               )}
@@ -186,7 +169,11 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
                     >
                       {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
                     </div>
-                    <span className={`text-sm sm:text-base ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                    <span
+                      className={`text-sm sm:text-base ${
+                        isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'
+                      }`}
+                    >
                       {option}
                     </span>
                   </div>
@@ -196,17 +183,17 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Điều hướng */}
         <div className="flex items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
-            onClick={handlePrevious}
+            onClick={() => setCurrentQuestionIndex(currentQuestionIndex - 1)}
             disabled={currentQuestionIndex === 0}
             className="px-4 sm:px-6 py-2 sm:py-3 bg-white rounded-xl shadow border border-gray-200 font-medium text-sm sm:text-base text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Câu trước
           </button>
           <button
-            onClick={handleNext}
+            onClick={() => setCurrentQuestionIndex(currentQuestionIndex + 1)}
             disabled={currentQuestionIndex === questions.length - 1}
             className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-xl shadow font-medium text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700"
           >
@@ -214,7 +201,7 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
           </button>
         </div>
 
-        {/* Question Grid */}
+        {/* Lưới câu hỏi */}
         <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-sm sm:text-base">Danh sách câu hỏi</h3>
@@ -234,8 +221,8 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
                     isCurrent
                       ? 'bg-blue-600 text-white ring-2 ring-blue-300'
                       : isAnswered
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   {index + 1}
@@ -249,7 +236,7 @@ export function QuizScreen({ questions, title, timeLimit, onBack, onComplete }: 
         </div>
       </div>
 
-      {/* Confirm Submit Modal */}
+      {/* Modal xác nhận nộp bài */}
       {showConfirmSubmit && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6">

@@ -1,93 +1,79 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HomeScreen } from './components/home-screen';
 import { LicenseScreen } from './components/license-screen';
-import { QuizScreen} from './components/quiz-screen';
+import { QuizScreen } from './components/quiz-screen';
 import type { QuizResults } from './components/quiz-screen';
 import { ResultsScreen } from './components/results-screen';
 import { CategoryScreen } from './components/category-screen';
-import { questions, categories, licenseTypes } from './data/questions';
-import type { Question } from './data/questions';
+import type { FrontendQuestion, LicenseCategoryResponse } from './services/api';
+import { startSession, flushSession, recordQuizResult } from './services/progress';
 
-type Screen = 
+// ─── Kiểu màn hình ────────────────────────────────────────────────────────────
+type Screen =
   | { type: 'home' }
-  | { type: 'license'; licenseId: string; licenseName: string }
-  | { type: 'category'; licenseId: string; licenseName: string; categoryId: string; categoryName: string }
-  | { type: 'quiz'; questions: Question[]; title: string; timeLimit?: number }
-  | { type: 'results'; results: QuizResults; questions: Question[] };
+  | { type: 'license'; category: LicenseCategoryResponse }
+  | {
+      type: 'category';
+      category: LicenseCategoryResponse;
+      topicId: number;
+      topicName: string;
+    }
+  | { type: 'quiz'; questions: FrontendQuestion[]; title: string; timeLimit?: number }
+  | { type: 'results'; results: QuizResults; questions: FrontendQuestion[] };
 
+// ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ type: 'home' });
 
-  const handleSelectLicense = (licenseId: string) => {
-    const license = licenseTypes.find((l) => l.id === licenseId);
-    if (license) {
-      setScreen({ type: 'license', licenseId, licenseName: license.name });
-    }
+  // ── Bắt đầu session khi app mount ─────────────────────────────────────────
+  useEffect(() => {
+    startSession();
+    const interval = setInterval(flushSession, 2 * 60_000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushSession();
+      if (document.visibilityState === 'visible') startSession();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      flushSession();
+    };
+  }, []);
+
+  // ── Điều hướng ──────────────────────────────────────────────────────────────
+
+  const goHome = () => setScreen({ type: 'home' });
+
+  const goLicense = (category: LicenseCategoryResponse) =>
+    setScreen({ type: 'license', category });
+
+  const goCategory = (
+    category: LicenseCategoryResponse,
+    topicId: number,
+    topicName: string,
+  ) => setScreen({ type: 'category', category, topicId, topicName });
+
+  const goQuiz = (
+    questions: FrontendQuestion[],
+    title: string,
+    timeLimit?: number,
+  ) => setScreen({ type: 'quiz', questions, title, timeLimit });
+
+  const goResults = (results: QuizResults, questions: FrontendQuestion[]) => {
+    recordQuizResult({ answers: results.answers });
+    setScreen({ type: 'results', results, questions });
   };
 
-  const handleSelectCategory = (licenseId: string, licenseName: string, categoryId: string) => {
-    const category = categories.find((c) => c.id === categoryId);
-    if (category) {
-      setScreen({ 
-        type: 'category', 
-        licenseId,
-        licenseName,
-        categoryId, 
-        categoryName: category.name 
-      });
-    }
-  };
-
-  const handleStartExam = () => {
-    // Randomly select 25 questions for exam
-    const shuffled = [...questions].sort(() => Math.random() - 0.5);
-    const examQuestions = shuffled.slice(0, 25);
-    setScreen({
-      type: 'quiz',
-      questions: examQuestions,
-      title: 'Đề thi thử',
-      timeLimit: 19,
-    });
-  };
-
-  const handleStartPractice = (practiceQuestions: Question[]) => {
-    setScreen({
-      type: 'quiz',
-      questions: practiceQuestions,
-      title: 'Luyện tập',
-    });
-  };
-
-  const handleQuizComplete = (results: QuizResults, quizQuestions: Question[]) => {
-    setScreen({
-      type: 'results',
-      results,
-      questions: quizQuestions,
-    });
-  };
-
-  const handleRetry = (quizQuestions: Question[], title: string, timeLimit?: number) => {
-    setScreen({
-      type: 'quiz',
-      questions: quizQuestions,
-      title,
-      timeLimit,
-    });
-  };
-
-  const handleBackToHome = () => {
-    setScreen({ type: 'home' });
-  };
-
-  const handleBackToLicense = (licenseId: string, licenseName: string) => {
-    setScreen({ type: 'license', licenseId, licenseName });
-  };
+  // ─── Render ─────────────────────────────────────────────────────────────────
 
   if (screen.type === 'home') {
     return (
       <HomeScreen
-        onSelectLicense={handleSelectLicense}
-        onStartExam={handleStartExam}
+        onSelectCategory={goLicense}
+        onStartExam={(questions, timeLimit, title) =>
+          goQuiz(questions, title ?? 'Đề thi thử', timeLimit)
+        }
       />
     );
   }
@@ -95,11 +81,13 @@ export default function App() {
   if (screen.type === 'license') {
     return (
       <LicenseScreen
-        licenseId={screen.licenseId}
-        licenseName={screen.licenseName}
-        onBack={handleBackToHome}
-        onSelectCategory={(categoryId) => 
-          handleSelectCategory(screen.licenseId, screen.licenseName, categoryId)
+        category={screen.category}
+        onBack={goHome}
+        onSelectTopic={(topicId, topicName) =>
+          goCategory(screen.category, topicId, topicName)
+        }
+        onStartExam={(questions, timeLimit) =>
+          goQuiz(questions, `Thi thử – ${screen.category.name}`, timeLimit)
         }
       />
     );
@@ -108,11 +96,13 @@ export default function App() {
   if (screen.type === 'category') {
     return (
       <CategoryScreen
-        categoryId={screen.categoryId}
-        categoryName={screen.categoryName}
-        questions={questions}
-        onBack={() => handleBackToLicense(screen.licenseId, screen.licenseName)}
-        onStartPractice={handleStartPractice}
+        category={screen.category}
+        topicId={screen.topicId}
+        topicName={screen.topicName}
+        onBack={() => setScreen({ type: 'license', category: screen.category })}
+        onStartPractice={(questions) =>
+          goQuiz(questions, `Luyện tập – ${screen.topicName}`)
+        }
       />
     );
   }
@@ -123,8 +113,8 @@ export default function App() {
         questions={screen.questions}
         title={screen.title}
         timeLimit={screen.timeLimit}
-        onBack={handleBackToHome}
-        onComplete={(results) => handleQuizComplete(results, screen.questions)}
+        onBack={goHome}
+        onComplete={(results) => goResults(results, screen.questions)}
       />
     );
   }
@@ -134,16 +124,10 @@ export default function App() {
       <ResultsScreen
         results={screen.results}
         questions={screen.questions}
-        onRetry={() => {
-          // Determine if this was an exam or practice
-          const isExam = screen.questions.length === 25;
-          if (isExam) {
-            handleStartExam();
-          } else {
-            handleRetry(screen.questions, 'Luyện tập');
-          }
-        }}
-        onHome={handleBackToHome}
+        onRetry={() =>
+          goQuiz(screen.questions, 'Làm lại', screen.results.timeTaken > 0 ? undefined : undefined)
+        }
+        onHome={goHome}
       />
     );
   }
