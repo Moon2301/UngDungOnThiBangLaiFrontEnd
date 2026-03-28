@@ -5,6 +5,7 @@ import { QuizScreen } from './components/quiz-screen';
 import type { QuizResults } from './components/quiz-screen';
 import { ResultsScreen } from './components/results-screen';
 import { CategoryScreen } from './components/category-screen';
+import { SignsLibrary } from './components/signs-library';
 import type { FrontendQuestion, LicenseCategoryResponse } from './services/api';
 import { startSession, flushSession, recordQuizResult } from './services/progress';
 
@@ -19,7 +20,8 @@ type Screen =
       topicName: string;
     }
   | { type: 'quiz'; questions: FrontendQuestion[]; title: string; timeLimit?: number }
-  | { type: 'results'; results: QuizResults; questions: FrontendQuestion[] };
+  | { type: 'results'; results: QuizResults; questions: FrontendQuestion[] , isPractice?: boolean}
+  | { type: 'signs';  };
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
@@ -60,9 +62,9 @@ export default function App() {
     timeLimit?: number,
   ) => setScreen({ type: 'quiz', questions, title, timeLimit });
 
-  const goResults = (results: QuizResults, questions: FrontendQuestion[]) => {
+  const goResults = (results: QuizResults, questions: FrontendQuestion[], isPractice?: boolean) => {
     recordQuizResult({ answers: results.answers });
-    setScreen({ type: 'results', results, questions });
+    setScreen({ type: 'results', results, questions, isPractice  });
   };
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -74,6 +76,7 @@ export default function App() {
         onStartExam={(questions, timeLimit, title) =>
           goQuiz(questions, title ?? 'Đề thi thử', timeLimit)
         }
+        onSignsLibrary={() => setScreen({ type: 'signs' })}
       />
     );
   }
@@ -114,7 +117,7 @@ export default function App() {
         title={screen.title}
         timeLimit={screen.timeLimit}
         onBack={goHome}
-        onComplete={(results) => goResults(results, screen.questions)}
+        onComplete={(results) => goResults(results, screen.questions,!screen.timeLimit)}
       />
     );
   }
@@ -124,12 +127,21 @@ export default function App() {
       <ResultsScreen
         results={screen.results}
         questions={screen.questions}
+        isPractice={screen.isPractice} 
         onRetry={() =>
-          goQuiz(screen.questions, 'Làm lại', screen.results.timeTaken > 0 ? undefined : undefined)
+          goQuiz(
+            screen.questions, 
+            'Làm lại', 
+            screen.isPractice ? undefined : 20 
+          )
         }
         onHome={goHome}
       />
     );
+  }
+
+  if (screen.type === 'signs') {
+    return <SignsLibrary onBack={goHome} />;
   }
 
   return null;

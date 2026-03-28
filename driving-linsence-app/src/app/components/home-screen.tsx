@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Trophy, Clock, CheckCircle2, Loader2, AlertCircle, RefreshCw, RotateCcw } from 'lucide-react';
+import { AlertTriangle, ChevronRight, BookOpen, Trophy, Clock, CheckCircle2, Loader2, AlertCircle, RefreshCw, RotateCcw } from 'lucide-react';
 import {
   fetchLicenseCategories,
   createExam,
@@ -22,9 +22,10 @@ const CATEGORY_COLORS = [
 interface HomeScreenProps {
   onSelectCategory: (category: LicenseCategoryResponse) => void;
   onStartExam: (questions: FrontendQuestion[], timeLimit?: number, title?: string) => void;
+  onSignsLibrary: () => void;
 }
 
-export function HomeScreen({ onSelectCategory, onStartExam }: HomeScreenProps) {
+export function HomeScreen({ onSelectCategory, onStartExam, onSignsLibrary }: HomeScreenProps) {
   const [categories, setCategories] = useState<LicenseCategoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -267,8 +268,23 @@ export function HomeScreen({ onSelectCategory, onStartExam }: HomeScreenProps) {
             </p>
           )}
         </div>
-
-        {/* Mẹo học tập */}
+        {/* Biển Báo */}
+        <button
+          onClick={onSignsLibrary}
+          className="w-full bg-gradient-to-r from-yellow-500 to-lime-500 text-white rounded-2xl shadow-lg p-4 sm:p-6 flex items-center justify-between hover:shadow-xl transition-shadow"
+        >
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-gray-900">Hệ thống Biển báo</h3>
+                <p className="text-gray-500 text-sm mt-1">Tra cứu 100+ biển báo đường bộ</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+          </button>
+          {/* Mẹo học tập */}
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl shadow-lg p-4 sm:p-6 text-white">
           <h3 className="font-bold text-base sm:text-lg mb-2">💡 Mẹo học tập</h3>
           <p className="text-xs sm:text-sm text-white/90">

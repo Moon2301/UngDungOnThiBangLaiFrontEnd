@@ -1,5 +1,5 @@
 import {
-  Trophy, X, Clock, CheckCircle2, XCircle, RotateCcw, Home, AlertTriangle,
+  Trophy, X, Clock, CheckCircle2, XCircle, RotateCcw, Home, AlertTriangle, BookOpen
 } from 'lucide-react';
 import type { QuizResults } from './quiz-screen';
 import type { FrontendQuestion } from '../services/api';
@@ -7,13 +7,14 @@ import type { FrontendQuestion } from '../services/api';
 interface ResultsScreenProps {
   results: QuizResults;
   questions: FrontendQuestion[];
+  isPractice?: boolean;
   onRetry: () => void;
   onHome: () => void;
 }
 
-export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsScreenProps) {
+export function ResultsScreen({ results, questions, isPractice, onRetry, onHome }: ResultsScreenProps) {
   const percentage = Math.round((results.correctAnswers / results.totalQuestions) * 100);
-  const passed = results.correctAnswers >= 21;
+  const passed = results.correctAnswers >= 21; 
 
   const failedImportantQuestions = results.answers.filter((answer) => {
     const question = questions.find((q) => q.id === answer.questionId);
@@ -34,25 +35,37 @@ export function ResultsScreen({ results, questions, onRetry, onHome }: ResultsSc
         {/* Card kết quả */}
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden mb-6">
           {/* Header */}
-          <div
-            className={`text-white p-8 text-center ${
-              actuallyPassed
-                ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-                : 'bg-gradient-to-r from-red-500 to-rose-600'
-            }`}
-          >
-            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              {actuallyPassed ? <Trophy className="w-12 h-12" /> : <X className="w-12 h-12" />}
+          {isPractice ? (
+            <div className="text-white p-8 text-center bg-gradient-to-r from-blue-500 to-indigo-600">
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-12 h-12" />
+              </div>
+              <h1 className="text-3xl font-bold mb-2">Hoàn thành ôn tập!</h1>
+              <p className="text-white/90 text-lg">
+                Bạn đã đi hết bộ câu hỏi. Hãy xem lại phần giải thích để nắm vững kiến thức nhé.
+              </p>
             </div>
-            <h1 className="text-3xl font-bold mb-2">
-              {actuallyPassed ? 'Chúc mừng! Bạn đã đạt!' : 'Chưa đạt yêu cầu'}
-            </h1>
-            <p className="text-white/90 text-lg">
-              {actuallyPassed
-                ? 'Kết quả của bạn đã vượt qua ngưỡng đạt yêu cầu'
-                : 'Hãy tiếp tục ôn tập và thử lại nhé!'}
-            </p>
-          </div>
+          ) : (
+            <div
+              className={`text-white p-8 text-center ${
+                actuallyPassed
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                  : 'bg-gradient-to-r from-red-500 to-rose-600'
+              }`}
+            >
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                {actuallyPassed ? <Trophy className="w-12 h-12" /> : <X className="w-12 h-12" />}
+              </div>
+              <h1 className="text-3xl font-bold mb-2">
+                {actuallyPassed ? 'Chúc mừng! Bạn đã đạt!' : 'Chưa đạt yêu cầu'}
+              </h1>
+              <p className="text-white/90 text-lg">
+                {actuallyPassed
+                  ? 'Kết quả của bạn đã vượt qua ngưỡng đạt yêu cầu'
+                  : 'Hãy tiếp tục ôn tập và thử lại nhé!'}
+              </p>
+            </div>
+          )}
 
           {/* Thống kê */}
           <div className="p-8">

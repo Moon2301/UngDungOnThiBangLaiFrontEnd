@@ -1,7 +1,20 @@
 // src/app/services/api.ts
 
-// ── Đổi port này khớp với .NET backend của bạn ──
-const BASE_URL = 'https://localhost:7288/api';
+const API_BASE_URL =
+  (import.meta as any)?.env?.VITE_API_BASE_URL?.toString?.() ||
+  'https://localhost:7288/api';
+
+const BACKEND_ORIGIN =
+  (import.meta as any)?.env?.VITE_BACKEND_ORIGIN?.toString?.() ||
+  API_BASE_URL.replace(/\/api\/?$/, '');
+
+function resolveBackendUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  const u = url.toString();
+  if (u.startsWith('http://') || u.startsWith('https://')) return u;
+  if (u.startsWith('/')) return `${BACKEND_ORIGIN}${u}`;
+  return u;
+}
 
 // ─────────────────────────────────────────────────
 // Kiểu dữ liệu trả về từ Backend
@@ -69,7 +82,25 @@ export interface FrontendQuestion {
   isImportant?: boolean;
   imageUrl?: string | null;
 }
+// ─────────────────────────────────────────────────
+// Kiểu dữ liệu Biển báo giao thông
+// ─────────────────────────────────────────────────
 
+export interface TrafficSignCategory {
+  id: string; // VD: 'Cấm', 'Nguy hiểm'
+  name: string;
+  description: string;
+  color: string;
+}
+
+export interface TrafficSign {
+  id: string; // VD: 'P.102'
+  name: string;
+  meaning: string;
+  categoryId: string; // Khớp với id của Category
+  svgPath?: string;
+  imageUrl?: string;
+}
 // ─────────────────────────────────────────────────
 // Helper: chuyển đổi dữ liệu API → FrontendQuestion
 // ─────────────────────────────────────────────────
@@ -136,7 +167,7 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
  * GET /api/LicenseCategory/GetAvailable
  */
 export async function fetchLicenseCategories(): Promise<LicenseCategoryResponse[]> {
-  return apiFetch<LicenseCategoryResponse[]>(`${BASE_URL}/LicenseCategory/GetAvailable`);
+  return apiFetch<LicenseCategoryResponse[]>(`${API_BASE_URL}/LicenseCategory/GetAvailable`);
 }
 
 /**
@@ -144,7 +175,7 @@ export async function fetchLicenseCategories(): Promise<LicenseCategoryResponse[
  * GET /api/Question/ByTopic/{topicId}
  */
 export async function fetchQuestionsByTopic(topicId: number): Promise<QuestionResponse[]> {
-  return apiFetch<QuestionResponse[]>(`${BASE_URL}/Question/ByTopic/${topicId}`);
+  return apiFetch<QuestionResponse[]>(`${API_BASE_URL}/Question/ByTopic/${topicId}`);
 }
 
 /**
@@ -152,7 +183,41 @@ export async function fetchQuestionsByTopic(topicId: number): Promise<QuestionRe
  * POST /api/Exam/CreateExam?categoryId={categoryId}
  */
 export async function createExam(categoryId: number): Promise<ExamResponse> {
-  return apiFetch<ExamResponse>(`${BASE_URL}/Exam/CreateExam?categoryId=${categoryId}`, {
+  return apiFetch<ExamResponse>(`${API_BASE_URL}/Exam/CreateExam?categoryId=${categoryId}`, {
     method: 'POST',
   });
+}
+
+/**
+ * Lấy danh sách các loại biển báo
+ * GET /api/TrafficSign/GetCategories
+ */
+export async function fetchTrafficCategories(): Promise<TrafficSignCategory[]> {
+  // Bồ có thể thêm cờ 'ngrok-skip-browser-warning' vào apiFetch nếu dùng ngrok
+  return apiFetch<TrafficSignCategory[]>(`${API_BASE_URL}/TrafficSign/GetCategories`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'ngrok-skip-browser-warning': 'true' // Đề phòng chạy bằng ngrok
+    }
+  });
+}
+
+/**
+ * Lấy toàn bộ danh sách biển báo
+ * GET /api/TrafficSign/GetSigns
+ */
+export async function fetchTrafficSigns(): Promise<TrafficSign[]> {
+  const data = await apiFetch<TrafficSign[]>(`${API_BASE_URL}/TrafficSign/GetSigns`, {
+     headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    }
+  });
+  // Backend thường trả imageUrl dạng "/images/..." => cần trỏ về đúng origin backend
+  return data.map((s) => ({
+    ...s,
+    imageUrl: resolveBackendUrl(s.imageUrl),
+  }));
 }
